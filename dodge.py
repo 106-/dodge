@@ -14,12 +14,14 @@ block_length_max = 60
 class dodge:
     def __init__(self):
         self.cnt = 0
-        self.terrain = np.zeros((block_num_y, block_num_x))
-        self.latest_obs_length = 5
+        self.terrain = obstacle.make_obstacle( block_center, block_center, block_num_y)
+        self.latest_obs_length = 10
         self.latest_obs_cnt = 0
         self.latest_obs_center = block_center
-        first_obs = obstacle.make_obstacle( block_center, block_center, self.latest_obs_length)
-        self.terrain = np.vstack((self.terrain, first_obs))
+        self.terrain = np.vstack((self.terrain, obstacle.make_obstacle( block_center, block_center, self.latest_obs_length) ))
+        
+        self.sight_filter = np.full(24, 2)
+        self.sight_filter = np.power(self.sight_filter, np.arange(24))
 
     def update(self):
         self.terrain = np.delete(self.terrain, 0, axis=0)
@@ -71,7 +73,10 @@ class dodge:
             sight_end = pos+3
             gap_end = 5
         sight[0:, gap_start:gap_end] = self.terrain[1:6,sight_start:sight_end]
-        return sight
+        # 自機マスの削除
+        sight = np.delete(sight.flatten(), -3)
+        sight_int = np.dot(sight, self.sight_filter)
+        return int(sight_int)
 
 class obstacle:
     passage_width = 4
