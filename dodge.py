@@ -1,6 +1,7 @@
 
 import numpy as np
 from gamelib import dx
+from sprites import sprites
 
 terrain_height = 600
 terrain_width = 500
@@ -43,15 +44,17 @@ class dodge:
                     self.draw_block(x, y)
 
     def draw_block(self, x, y, color=dx.dx_GetColor(255, 0, 0)):
+        pos = dodge.convert_pos(x, y)
         dx.dx_DrawBox(block_size*x, terrain_height-block_size*(y+1), block_size*(x+1)-1, terrain_height-block_size*y-1, color, 1)
+    
+    @staticmethod
+    def convert_pos(x, y):
+        return (block_size*x, terrain_height-block_size*(y+1))
 
     def collision(self, pos):
-        return self.terrain[1][pos] == 1
+        return pos < 0 or block_num_x-1 < pos or self.terrain[1][pos] == 1
     
-    def collision_edge(self, pos):
-        return pos < 0 or block_num_x-1 < pos
-    
-    def get_sight(self, pos):
+    def get_sight(self, pos, vector=False):
         # 前方5マスのブロック情報を取得
         # ■ ■ ■ □ □
         # ■ ■ ■ □ □
@@ -75,8 +78,10 @@ class dodge:
         sight[0:, gap_start:gap_end] = self.terrain[1:6,sight_start:sight_end]
         # 自機マスの削除
         sight = np.delete(sight.flatten(), -3)
-        sight_int = np.dot(sight, self.sight_filter)
-        return int(sight_int)
+        if vector:
+            return sight
+        else:
+            return int(np.dot(sight, self.sight_filter))
 
 class obstacle:
     passage_width = 4

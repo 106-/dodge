@@ -20,7 +20,7 @@ def main():
     # handler = agent.HumanHandler
     handler = agent.QTableHandler()
 
-    fps = showfps(0, HEIGHT-15)
+    fps = showfps(0, 0)
     dodge_ins = dodge()
     ag = agent.Agent(dodge_ins, handler)
     episode = 1
@@ -36,7 +36,7 @@ def main():
         dodge_ins.draw()
         ag.draw()
         fps.draw()
-        dx.dx_DrawString(0, HEIGHT-30, to_strbuf("episode: %d"%episode), dx.dx_GetColor(255,255,255), 0)        
+        dx.dx_DrawString(0, 15, to_strbuf("episode: %d"%episode), dx.dx_GetColor(255,255,255), 0)        
 
         if ag.isdead:
             dodge_ins = dodge()
