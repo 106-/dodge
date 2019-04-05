@@ -54,7 +54,7 @@ class dodge:
     def collision(self, pos):
         return pos < 0 or block_num_x-1 < pos or self.terrain[1][pos] == 1
     
-    def get_sight(self, pos, vector=False):
+    def get_sight(self, pos, number=False):
         # 前方5マスのブロック情報を取得
         # ■ ■ ■ □ □
         # ■ ■ ■ □ □
@@ -78,10 +78,10 @@ class dodge:
         sight[0:, gap_start:gap_end] = self.terrain[1:6,sight_start:sight_end]
         # 自機マスの削除
         sight = np.delete(sight.flatten(), 2)
-        if vector:
-            return sight
-        else:
+        if number:
             return int(np.dot(sight, self.sight_filter))
+        else:
+            return sight
 
 class obstacle:
     passage_width = 4

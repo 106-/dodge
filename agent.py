@@ -56,12 +56,12 @@ class HumanHandler:
     def draw(self):
         pass
 
-class QTableHandler:
+class QLearningHandler:
     LEFT = 0
     STAY = 1
     RIGHT = 2
 
-    def __init__(self, old_q_table=None, cum_reward=0):
+    def __init__(self, cum_reward=0):
         # 行動逆温度
         self.epsilon = 0.1
         # 割引率
@@ -69,40 +69,48 @@ class QTableHandler:
         # 減速パラメータ
         self.alpha = 0.1
 
-        if not old_q_table is None:
-            self.q_table = old_q_table
-        else:
-            self.q_table = np.random.rand(2**24, 3)
         self.agent = None
-        self.old_sight = None
-        self.old_act = None
         self.cum_reward = cum_reward
     
     def set_agent(self, agent):
         self.agent = agent
 
     def update(self):
+        pass
 
-        sight = self.agent.dodge.get_sight(self.agent.pos)
+    def draw(self):
+        dx.dx_DrawString(0, 30, to_strbuf("reward: %d"%self.cum_reward), dx.dx_GetColor(255,255,255), 0)        
+
+class QTableHandler(QLearningHandler):
+    def __init__(self, cum_reward=0, old_q_table=False):
+        self.old_sight = None
+        self.old_act = None
+        
+        if old_q_table is False:
+            self.q_table = np.random.rand(2**24, 3)
+        else:
+            self.q_table = old_q_table
+
+        super().__init__(cum_reward)
+    
+    def update(self):
         # 前回の行動の評価
         if self.old_sight:
             reward = 0
             if self.agent.isdead:
                 reward = -100
             else:
-                sight = self.agent.dodge.get_sight(self.agent.pos, vector=True)[:4]
+                sight = self.agent.dodge.get_sight(self.agent.pos)[:4]
                 # 生存ボーナス
                 reward += 5
                 # 壁に近いほど報酬を下げる
                 reward += np.dot(sight, [-10, -20, -20, -10])
             self.cum_reward += reward
-            sight_next = np.array([self.agent.dodge.get_sight(self.agent.pos-1),
-                                    self.agent.dodge.get_sight(self.agent.pos),
-                                    self.agent.dodge.get_sight(self.agent.pos+1)])
-            next_q_max = np.max(self.q_table[sight_next])
+            sight = self.agent.dodge.get_sight(self.agent.pos, number=True)
+            next_q_max = np.max(self.q_table[sight])
             self.q_table[self.old_sight][self.old_act] += self.alpha * ( reward + self.gamma * next_q_max - self.q_table[self.old_sight][self.old_act] )
 
-        self.old_sight = self.agent.dodge.get_sight(self.agent.pos)
+        self.old_sight = self.agent.dodge.get_sight(self.agent.pos, number=True)
 
         # 行動
         act = None
@@ -119,6 +127,62 @@ class QTableHandler:
             self.agent.pos += 1
         
         self.old_act = act
+
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adamax
+from keras.losses import mean_squared_error
+
+class QModelHandler(QLearningHandler):
+    def __init__(self, cum_reward=0, model=False):
+        self.old_sight = None
+        self.old_act = None
+        
+        if model is False:
+            self.model = Sequential()
+            self.model.add(Dense(3, activation='linear', input_dim=24))
+            self.model.compile(loss=mean_squared_error, optimizer=Adamax())
+        else:
+            self.model = model
     
-    def draw(self):
-        dx.dx_DrawString(0, 30, to_strbuf("reward: %d"%self.cum_reward), dx.dx_GetColor(255,255,255), 0)        
+        super().__init__(cum_reward)
+    
+    def update(self):
+        if not (self.old_sight is None):
+            reward = 0
+            if self.agent.isdead:
+                reward = -100
+            else:
+                sight = self.agent.dodge.get_sight(self.agent.pos)[:4]
+                # 生存ボーナス
+                reward += 5
+                # 壁に近いほど報酬を下げる
+                reward += np.dot(sight, [-10, -20, -20, -10])
+            self.cum_reward += reward
+            
+            sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+            next_q_max = np.max(self.model.predict(sight))
+            # 一つ前の状態のq値
+            target_q = self.model.predict(self.old_sight)
+            target_q_value = target_q[0][self.old_act] + self.alpha * ( reward + self.gamma * next_q_max - target_q[0][self.old_act] )
+            target_q[0][self.old_act] = target_q_value
+
+            self.model.fit(self.old_sight, target_q, verbose=0)
+
+        self.old_sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+
+        # 行動
+        act = None
+        if np.random.rand() < self.epsilon:
+            act = np.random.choice([QTableHandler.LEFT, QTableHandler.STAY, QTableHandler.RIGHT])
+        else:
+            sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+            q = self.model.predict(sight)
+            act = np.argmax(q)
+        
+        if act == QTableHandler.LEFT:
+            self.agent.pos -= 1
+        elif act == QTableHandler.RIGHT:
+            self.agent.pos += 1
+        
+        self.old_act = act

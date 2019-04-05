@@ -18,7 +18,8 @@ def main():
         sys.exit()
 
     # handler = agent.HumanHandler
-    handler = agent.QTableHandler()
+    # handler = agent.QTableHandler()
+    handler = agent.QModelHandler()
 
     fps = showfps(0, 0)
     dodge_ins = dodge()
@@ -40,7 +41,8 @@ def main():
 
         if ag.isdead:
             dodge_ins = dodge()
-            handler = agent.QTableHandler(old_q_table=handler.q_table, cum_reward=handler.cum_reward)
+            #handler = agent.QTableHandler(old_q_table=handler.q_table, cum_reward=handler.cum_reward)
+            handler = agent.QModelHandler(model=handler.model, cum_reward=handler.cum_reward)
             handler.set_agent(ag)
             ag = agent.Agent(dodge_ins, handler)
             episode += 1
