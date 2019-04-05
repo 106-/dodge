@@ -90,7 +90,7 @@ class QTableHandler:
             if self.agent.isdead:
                 reward = -100
             else:
-                sight = self.agent.dodge.get_sight(self.agent.pos, vector=True)[-4:]
+                sight = self.agent.dodge.get_sight(self.agent.pos, vector=True)[:4]
                 # 生存ボーナス
                 reward += 5
                 # 壁に近いほど報酬を下げる

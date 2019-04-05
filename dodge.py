@@ -77,7 +77,7 @@ class dodge:
             gap_end = 5
         sight[0:, gap_start:gap_end] = self.terrain[1:6,sight_start:sight_end]
         # 自機マスの削除
-        sight = np.delete(sight.flatten(), -3)
+        sight = np.delete(sight.flatten(), 2)
         if vector:
             return sight
         else:
