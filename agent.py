@@ -134,13 +134,18 @@ from keras.optimizers import Adamax
 from keras.losses import mean_squared_error
 
 class QModelHandler(QLearningHandler):
-    def __init__(self, cum_reward=0, model=False):
+    def __init__(self, cum_reward=0, model=False, sight_range=5):
+
+        if sight_range % 2 == 0:
+            raise ValueError("sight_range must be odd number.")
+        self.sight_range = sight_range
+
         self.old_sight = None
         self.old_act = None
         
         if model is False:
             self.model = Sequential()
-            self.model.add(Dense(3, activation='linear', input_dim=24))
+            self.model.add(Dense(3, activation='linear', input_dim=self.sight_range**2-1))
             self.model.compile(loss=mean_squared_error, optimizer=Adamax())
         else:
             self.model = model
@@ -153,14 +158,15 @@ class QModelHandler(QLearningHandler):
             if self.agent.isdead:
                 reward = -100
             else:
-                sight = self.agent.dodge.get_sight(self.agent.pos)[:4]
+                sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range)[:self.sight_range-1]
                 # 生存ボーナス
-                reward += 5
+                reward += 20
                 # 壁に近いほど報酬を下げる
-                reward += np.dot(sight, [-10, -20, -20, -10])
+                penalty = np.linspace(-5, -50, (self.sight_range-1)/2 ) 
+                reward += np.dot(sight, np.hstack((penalty, penalty[::-1])))
             self.cum_reward += reward
             
-            sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+            sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range).reshape(1,self.sight_range**2-1)
             next_q_max = np.max(self.model.predict(sight))
             # 一つ前の状態のq値
             target_q = self.model.predict(self.old_sight)
@@ -169,14 +175,14 @@ class QModelHandler(QLearningHandler):
 
             self.model.fit(self.old_sight, target_q, verbose=0)
 
-        self.old_sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+        self.old_sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range).reshape(1,self.sight_range**2-1)
 
         # 行動
         act = None
         if np.random.rand() < self.epsilon:
             act = np.random.choice([QTableHandler.LEFT, QTableHandler.STAY, QTableHandler.RIGHT])
         else:
-            sight = self.agent.dodge.get_sight(self.agent.pos).reshape(1,24)
+            sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range).reshape(1,self.sight_range**2-1)
             q = self.model.predict(sight)
             act = np.argmax(q)
         
@@ -186,3 +192,12 @@ class QModelHandler(QLearningHandler):
             self.agent.pos += 1
         
         self.old_act = act
+    
+    def draw(self):
+        dx.dx_SetDrawBlendMode(1, 128)
+        center = int((self.sight_range-1)/2)
+        for y in range(1, self.sight_range+1):
+            for x in range(self.agent.pos-center, self.agent.pos+(self.sight_range-center)):
+                self.agent.dodge.draw_block(x, y, color=dx.dx_GetColor(0, 0, 255))
+        dx.dx_SetDrawBlendMode(0, 0)
+        super().draw()

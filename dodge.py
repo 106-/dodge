@@ -54,37 +54,39 @@ class dodge:
     def collision(self, pos):
         return pos < 0 or block_num_x-1 < pos or self.terrain[1][pos] == 1
     
-    def get_sight(self, pos, number=False):
+    def get_sight(self, pos, number=False, sight_range=5):
         # 前方5マスのブロック情報を取得
         # ■ ■ ■ □ □
         # ■ ■ ■ □ □
         # □ ■ □ □ □
         # □ □ □ □ □
         # □ □ × □ □
-        sight = np.ones((5, 5))
-        if pos-2 < 0:
+        center = int(sight_range / 2)
+        sight = np.ones((sight_range, sight_range))
+        if pos-center < 0:
             sight_start = 0
-            gap_start = abs(pos-2)
+            gap_start = abs(pos-center)
         else:
-            sight_start = pos-2
+            sight_start = pos-center
             gap_start = 0
         
-        if block_num_x < pos+3:
+        if block_num_x < pos+center+1:
             sight_end = block_num_x
-            gap_end = 5-abs(pos+3-block_num_x)
+            gap_end = sight_range-abs(pos+center+1-block_num_x)
         else:
-            sight_end = pos+3
-            gap_end = 5
-        sight[0:, gap_start:gap_end] = self.terrain[1:6,sight_start:sight_end]
+            sight_end = pos+center+1
+            gap_end = sight_range
+        sight[0:, gap_start:gap_end] = self.terrain[1:sight_range+1,sight_start:sight_end]
+        # print(np.flipud(sight))
         # 自機マスの削除
-        sight = np.delete(sight.flatten(), 2)
+        sight = np.delete(sight.flatten(), center)
         if number:
             return int(np.dot(sight, self.sight_filter))
         else:
             return sight
 
 class obstacle:
-    passage_width = 4
+    passage_width = 4 
 
     def linear( start, end, length):
         return np.array([ int(start+0.5 + ( end - start ) * (t / length)) for t in range(length)])

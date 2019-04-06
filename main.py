@@ -18,8 +18,8 @@ def main():
         sys.exit()
 
     # handler = agent.HumanHandler
-    handler = agent.QTableHandler()
-    # handler = agent.QModelHandler()
+    # handler = agent.QTableHandler()
+    handler = agent.QModelHandler(sight_range=9)
 
     score = 0
     hi_score = 0
