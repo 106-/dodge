@@ -79,7 +79,7 @@ class QLearningHandler:
         pass
 
     def draw(self):
-        dx.dx_DrawString(0, 30, to_strbuf("reward: %d"%self.cum_reward), dx.dx_GetColor(255,255,255), 0)        
+        dx.dx_DrawString(0, 60, to_strbuf("reward: %d"%self.cum_reward), dx.dx_GetColor(255,255,255), 0)        
 
 class QTableHandler(QLearningHandler):
     def __init__(self, cum_reward=0, old_q_table=False):
@@ -117,7 +117,7 @@ class QTableHandler(QLearningHandler):
         if np.random.rand() < self.epsilon:
             act = np.random.choice([QTableHandler.LEFT, QTableHandler.STAY, QTableHandler.RIGHT])
         else:
-            sight = self.agent.dodge.get_sight(self.agent.pos)
+            sight = self.agent.dodge.get_sight(self.agent.pos, number=True)
             q = self.q_table[sight]
             act = np.argmax(q)
         
