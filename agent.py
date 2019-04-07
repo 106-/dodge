@@ -160,7 +160,7 @@ class QModelHandler(QLearningHandler):
             else:
                 sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range)[:self.sight_range-1]
                 # 生存ボーナス
-                reward += 20
+                reward += 5 
                 # 壁に近いほど報酬を下げる
                 penalty = np.linspace(-5, -50, (self.sight_range-1)/2 ) 
                 reward += np.dot(sight, np.hstack((penalty, penalty[::-1])))
