@@ -4,11 +4,18 @@ import math
 import random
 import sys
 import agent
+import argparse
 from gamelib import *
 from dodge import dodge
 
 WIDTH = 500 
 HEIGHT = 600
+
+parser = argparse.ArgumentParser(description="dodge")
+parser.add_argument("agent_handler", action="store", type=str, default="model", help="使用するhandlerの選択. human, table, model, saved_modelから選択可能.")
+parser.add_argument("-r", "--sight_range", action="store", type=int, default=5, help="モデル学習のときエージェントに与える視界の大きさ. 奇数のみ有効.")
+parser.add_argument("-m", "--model_file", action="store", type=str, default="", help="保存したモデルのファイル名. 拡張子はおそらくh5")
+args = parser.parse_args()
 
 def main():
     dx.dx_ChangeWindowMode(1)
@@ -17,10 +24,17 @@ def main():
     if(dx.dx_DxLib_Init() == -1 or dx.dx_SetDrawScreen(-2) !=0 ):
         sys.exit()
 
-    # handler = agent.HumanHandler
-    # handler = agent.QTableHandler()
-    # handler = agent.QModelHandler(sight_range=9)
-    handler = agent.QSavedModelHandler("over3000.h5")
+    handler = None
+    if args.agent_handler == "human":
+        handler = agent.HumanHandler()
+    elif args.agent_handler == "table":
+        handler = agent.QTableHandler()
+    elif args.agent_handler == "model":
+        handler = agent.QModelHandler(sight_range=args.sight_range)
+    elif args.agent_handler == "saved_model":
+        handler = agent.QSavedModelHandler(args.model_file)
+    else:
+        raise ValueError("handler type is unknown.")
 
     score = 0
     hi_score = 0

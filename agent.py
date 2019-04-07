@@ -2,7 +2,6 @@
 from gamelib import CheckButton, dx, to_strbuf
 from dodge import block_center, block_size
 import numpy as np
-from main import HEIGHT
 from sprites import sprites
 from dodge import dodge
 
