@@ -16,7 +16,8 @@ class Agent:
         self.isdead = False
         self.dodge = dodge
         self.handler = handler
-        self.handler.set_agent(self)
+        if hasattr(self.handler, "set_agent"):
+            self.handler.set_agent(self)
 
     def update(self):
         self.check_collision()
@@ -201,3 +202,28 @@ class QModelHandler(QLearningHandler):
                 self.agent.dodge.draw_block(x, y, color=dx.dx_GetColor(0, 0, 255))
         dx.dx_SetDrawBlendMode(0, 0)
         super().draw()
+
+from keras.models import load_model
+import math
+
+class QSavedModelHandler:
+    def __init__(self, filename):
+        self.model = load_model(filename)
+        input_dim = self.model.get_layer(index=0).get_weights()[0].shape[0]
+        self.sight_range = int(math.sqrt(input_dim+1))
+    
+    def set_agent(self, agent):
+        self.agent = agent
+
+    def update(self):
+        sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range).reshape(1,self.sight_range**2-1)
+        q = self.model.predict(sight)
+        act = np.argmax(q)
+        
+        if act == QTableHandler.LEFT:
+            self.agent.pos -= 1
+        elif act == QTableHandler.RIGHT:
+            self.agent.pos += 1
+    
+    def draw(self):
+        pass

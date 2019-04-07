@@ -19,7 +19,8 @@ def main():
 
     # handler = agent.HumanHandler
     # handler = agent.QTableHandler()
-    handler = agent.QModelHandler(sight_range=9)
+    # handler = agent.QModelHandler(sight_range=9)
+    handler = agent.QSavedModelHandler("over3000.h5")
 
     score = 0
     hi_score = 0
@@ -49,7 +50,6 @@ def main():
 
         if ag.isdead:
             dodge_ins = dodge()
-            handler.set_agent(ag)
             ag = agent.Agent(dodge_ins, handler)
             score = 0
             episode += 1
