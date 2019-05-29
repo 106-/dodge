@@ -19,6 +19,8 @@ args = parser.parse_args()
 
 def main():
     dx.dx_ChangeWindowMode(1)
+    dx.dx_SetDoubleStartValidFlag(1)
+    dx.dx_SetAlwaysRunFlag(1)
     dx.dx_SetGraphMode(WIDTH, HEIGHT, 32)
     dx.dx_SetMainWindowText(to_strbuf("dodge"))
     if(dx.dx_DxLib_Init() == -1 or dx.dx_SetDrawScreen(-2) !=0 ):
