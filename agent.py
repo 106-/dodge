@@ -68,6 +68,8 @@ class QLearningHandler:
         self.gamma = 0.9
         # 減速パラメータ
         self.alpha = 0.1
+        # 貪欲/挑戦の調整パラメータ betaが高いほど貪欲志向, Noneで無限大
+        self.beta = None
 
         self.agent = None
         self.cum_reward = cum_reward
@@ -152,6 +154,10 @@ class QModelHandler(QLearningHandler):
     
         super().__init__(cum_reward)
     
+    def _softmax(self, energy):
+        energy_exp = np.exp(energy)
+        return energy_exp / np.sum(energy_exp)  
+
     def update(self):
         if not (self.old_sight is None):
             reward = 0
@@ -167,10 +173,14 @@ class QModelHandler(QLearningHandler):
             self.cum_reward += reward
             
             sight = self.agent.dodge.get_sight(self.agent.pos, sight_range=self.sight_range).reshape(1,self.sight_range**2-1)
-            next_q_max = np.max(self.model.predict(sight))
+            if self.beta == None:
+                next_q = np.max(self.model.predict(sight))
+            else:
+                now_q = self.model.predict(sight)
+                next_q = np.sum(self._softmax(self.beta * now_q) * now_q)
             # 一つ前の状態のq値
             target_q = self.model.predict(self.old_sight)
-            target_q_value = target_q[0][self.old_act] + self.alpha * ( reward + self.gamma * next_q_max - target_q[0][self.old_act] )
+            target_q_value = target_q[0][self.old_act] + self.alpha * ( reward + self.gamma * next_q - target_q[0][self.old_act] )
             target_q[0][self.old_act] = target_q_value
 
             self.model.fit(self.old_sight, target_q, verbose=0)
